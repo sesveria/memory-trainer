@@ -13,6 +13,8 @@ React 19 + TypeScript + Vite 纯前端 SPA，Zustand 管理训练状态机。无
 
 灵感来自临床认知评估中的 WAIS-IV 数字广度子测试，以自适应阶梯算法动态调整难度。
 
+🌐 **在线体验**: [sesveria.github.io/memory-trainer](https://sesveria.github.io/memory-trainer/)
+
 ---
 
 ## ✨ 功能
@@ -81,8 +83,11 @@ React 19 + TypeScript + Vite 纯前端 SPA，Zustand 管理训练状态机。无
 memory-trainer/
 ├── index.html                # 入口 HTML
 ├── package.json              # 依赖 & 脚本
-├── vite.config.ts            # Vite 配置
+├── vite.config.ts            # Vite 配置（base: './' 适配 GitHub Pages）
 ├── tsconfig.json             # TypeScript 配置
+├── .github/
+│   └── workflows/
+│       └── deploy.yml        # GitHub Actions：push 自动构建并部署到 gh-pages
 └── src/
     ├── main.tsx              # React 挂载入口
     ├── App.tsx               # 根组件（首页 / 训练页 路由）
@@ -131,11 +136,28 @@ npm run dev
 
 ## 📦 部署
 
-纯静态 SPA，构建后将 `dist/` 部署到任意静态托管即可：
+### GitHub Pages（自动）
+
+push 到 `main` 分支后，GitHub Actions 自动构建并部署到 `gh-pages` 分支。首次使用需确保：
+
+1. 仓库 Settings → Actions → General → Workflow permissions 勾选 **"Read and write permissions"**
+2. 仓库 Settings → Pages → Source 选择 **"Deploy from a branch"**，分支选 `gh-pages`，目录 `/ (root)`
+
+> ⚠️ `vite.config.ts` 中必须设置 `base: './'`，否则 GitHub Pages 子路径下静态资源会加载失败（默认绝对路径 `/assets/...` 无法在 `https://用户名.github.io/仓库名/` 下正确解析）。
+
+### 手动部署
+
+纯静态 SPA，构建后将 `dist/` 部署到任意静态托管：
 
 ```bash
 npm run build
 # dist/ 目录可直接部署到 Nginx / Vercel / Netlify / GitHub Pages 等
+```
+
+### 手动推送到 gh-pages
+
+```bash
+git subtree push --prefix dist origin gh-pages
 ```
 
 ---
