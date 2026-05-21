@@ -9,8 +9,6 @@ export interface TrainingState {
   currentSequence: number[];
   trialStartTime: number;
   currentSpanLength: number;
-  _presentingIndex: number;
-  _showFixation: boolean;
   userInput: number[];
   adaptive: AdaptiveState | null;
   lastCorrect: boolean | null;
@@ -22,8 +20,6 @@ export interface TrainingState {
   setMode: (mode: DigitSpanMode) => void;
   startTrial: () => void;
   startPresenting: () => void;
-  setPresentingIndex: (idx: number) => void;
-  setShowFixation: (show: boolean) => void;
   finishPresenting: () => void;
   pushDigit: (digit: number) => void;
   popDigit: () => void;
@@ -40,8 +36,6 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   currentSequence: [],
   trialStartTime: 0,
   currentSpanLength: 0,
-  _presentingIndex: 0,
-  _showFixation: false,
   userInput: [],
   adaptive: null,
   lastCorrect: null,
@@ -52,6 +46,10 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
 
   setMode: (mode) => {
     const adaptive = createAdaptive(mode);
+    const engine = getEngine(mode);
+    const span = adaptive.currentSpan;
+    const sequence = engine.generateSequence(span);
+
     set({
       mode,
       adaptive,
@@ -60,7 +58,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       sessionTrials: [],
       sessionStartTime: Date.now(),
       bestSpanThisSession: 0,
-      currentSpanLength: adaptive.currentSpan,
+      currentSpanLength: span,
+      currentSequence: sequence,
+      userInput: [],
       lastCorrect: null,
     });
   },
@@ -78,8 +78,6 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       lastCorrect: null,
       phase: 'instructions',
       instructionsCountdown: 3,
-      _presentingIndex: 0,
-      _showFixation: false,
     });
   },
 
@@ -87,13 +85,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     set({
       phase: 'presenting',
       trialStartTime: Date.now(),
-      _presentingIndex: 0,
-      _showFixation: false,
     });
   },
-
-  setPresentingIndex: (idx) => set({ _presentingIndex: idx, _showFixation: false }),
-  setShowFixation: (show) => set({ _showFixation: show }),
 
   finishPresenting: () => {
     set({ phase: 'recalling' });
@@ -114,7 +107,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   submitResponse: () => {
     const { mode, currentSequence, userInput, trialStartTime, adaptive, sessionTrials, bestSpanThisSession } = get();
     if (!mode || !adaptive) return;
-    if (userInput.length !== currentSequence.length) return; // guard
+    if (userInput.length !== currentSequence.length) return;
     if (get().phase !== 'recalling') return;
 
     const engine = getEngine(mode);
@@ -166,8 +159,6 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       currentSequence: [],
       trialStartTime: 0,
       currentSpanLength: 0,
-      _presentingIndex: 0,
-      _showFixation: false,
       userInput: [],
       adaptive: null,
       lastCorrect: null,

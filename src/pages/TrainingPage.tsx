@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTrainingStore } from '../store/trainingStore';
 import { getModeLabel } from '../engine/digitSpan';
 import Instructions from '../components/Instructions';
@@ -15,50 +15,76 @@ const INTERVAL_MS = 500;
 function PresentingRunner() {
   const phase = useTrainingStore((s) => s.phase);
   const currentSequence = useTrainingStore((s) => s.currentSequence);
-  const presentingIndex = useTrainingStore((s) => s._presentingIndex);
-  const showFixation = useTrainingStore((s) => s._showFixation);
-  const setPresentingIndex = useTrainingStore((s) => s.setPresentingIndex);
-  const setShowFixation = useTrainingStore((s) => s.setShowFixation);
   const finishPresenting = useTrainingStore((s) => s.finishPresenting);
-  const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const [index, setIndex] = useState(0);
+  const [showFixation, setShowFixation] = useState(false);
+  const [done, setDone] = useState(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    if (phase !== 'presenting') return;
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (phase !== 'presenting') {
+      setIndex(0);
+      setShowFixation(false);
+      setDone(false);
+      return;
+    }
 
     const seq = currentSequence;
-    timerRef.current.forEach(clearTimeout);
-    timerRef.current = [];
+    if (seq.length === 0) return;
 
-    seq.forEach((_, index) => {
-      const showTime = index * (DIGIT_SHOW_MS + INTERVAL_MS);
-      const hideTime = showTime + DIGIT_SHOW_MS;
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
-      timerRef.current.push(
-        setTimeout(() => setPresentingIndex(index), showTime)
-      );
+    seq.forEach((_, i) => {
+      const showAt = i * (DIGIT_SHOW_MS + INTERVAL_MS);
+      const hideAt = showAt + DIGIT_SHOW_MS;
 
-      if (index < seq.length - 1) {
-        timerRef.current.push(
-          setTimeout(() => setShowFixation(true), hideTime)
-        );
+      timers.push(setTimeout(() => {
+        if (!mountedRef.current) return;
+        setIndex(i);
+        setShowFixation(false);
+      }, showAt));
+
+      if (i < seq.length - 1) {
+        timers.push(setTimeout(() => {
+          if (!mountedRef.current) return;
+          setShowFixation(true);
+        }, hideAt));
       }
     });
 
-    const totalTime = (seq.length - 1) * (DIGIT_SHOW_MS + INTERVAL_MS) + DIGIT_SHOW_MS;
-    timerRef.current.push(
-      setTimeout(() => finishPresenting(), totalTime + 200)
-    );
+    // Total presenting duration
+    const totalMs = (seq.length - 1) * (DIGIT_SHOW_MS + INTERVAL_MS) + DIGIT_SHOW_MS + 200;
+
+    const doneTimer = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setDone(true);
+    }, totalMs);
 
     return () => {
-      timerRef.current.forEach(clearTimeout);
-      timerRef.current = [];
+      timers.forEach(clearTimeout);
+      clearTimeout(doneTimer);
     };
-  }, [phase, currentSequence, setPresentingIndex, setShowFixation, finishPresenting]);
+  }, [phase, currentSequence]);
+
+  // When the presenting sequence has finished, call finishPresenting
+  useEffect(() => {
+    if (done && phase === 'presenting') {
+      finishPresenting();
+    }
+  }, [done, phase, finishPresenting]);
+
+  if (phase !== 'presenting') return null;
 
   if (showFixation) {
     return <FixationCross />;
   }
-  return <DigitDisplay digit={currentSequence[presentingIndex] ?? 0} />;
+  return <DigitDisplay digit={currentSequence[index] ?? 0} />;
 }
 
 function TrainingHeader() {
