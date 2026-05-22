@@ -114,3 +114,9 @@ export function getTotalSessions(): number {
 export function clearAllData(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
+
+/** Return all sessions sorted oldest-first. */
+export function getAllSessions(): SessionRecord[] {
+  const data = loadData();
+  return [...data.sessions];
+}

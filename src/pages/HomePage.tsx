@@ -1,5 +1,6 @@
 import ModeSelector from '../components/ModeSelector';
 import PersonalBests from '../components/PersonalBests';
+import StatsPanel from '../components/StatsPanel';
 import { getRecentSessions, getTotalSessions } from '../engine/storage';
 import { getModeMeta } from '../engine/registry';
 import type { ModeId } from '../types';
@@ -26,6 +27,8 @@ export default function HomePage({ onSelectMode }: Props) {
       </p>
 
       <PersonalBests />
+
+      <StatsPanel />
 
       <ModeSelector onSelect={onSelectMode} />
 
