@@ -7,6 +7,8 @@ import FixationCross from '../components/FixationCross';
 import DigitRecallingArea from '../components/DigitRecallingArea';
 import CorsiPresentingCanvas from '../components/CorsiPresentingCanvas';
 import CorsiRecallingArea from '../components/CorsiRecallingArea';
+import PatternPresentingCanvas from '../components/PatternPresentingCanvas';
+import PatternRecallingArea from '../components/PatternRecallingArea';
 import Feedback from '../components/Feedback';
 import SessionSummary from '../components/SessionSummary';
 
@@ -92,6 +94,15 @@ function CorsiPresentingRunner() {
   return <CorsiPresentingCanvas sequence={currentSequence} onDone={finishPresenting} />;
 }
 
+function PatternPresentingRunner() {
+  const phase = useTrainingStore((s) => s.phase);
+  const currentSequence = useTrainingStore((s) => s.currentSequence);
+  const finishPresenting = useTrainingStore((s) => s.finishPresenting);
+
+  if (phase !== 'presenting') return null;
+  return <PatternPresentingCanvas sequence={currentSequence} onDone={finishPresenting} />;
+}
+
 function TrainingHeader() {
   const modeId = useTrainingStore((s) => s.modeId);
   const adaptive = useTrainingStore((s) => s.adaptive);
@@ -119,15 +130,23 @@ export default function TrainingPage() {
   if (!modeId) return null;
 
   const meta = getModeMeta(modeId);
-  const isDigit = meta.category === 'digit';
+  const cat = meta.category;
 
   return (
     <div className="training-page">
       <TrainingHeader />
       <div className="display-area">
         {phase === 'instructions' && <Instructions />}
-        {phase === 'presenting' && (isDigit ? <DigitPresentingRunner /> : <CorsiPresentingRunner />)}
-        {phase === 'recalling' && (isDigit ? <DigitRecallingArea /> : <CorsiRecallingArea />)}
+        {phase === 'presenting' && (
+          cat === 'digit' ? <DigitPresentingRunner /> :
+          cat === 'spatial' ? <CorsiPresentingRunner /> :
+          <PatternPresentingRunner />
+        )}
+        {phase === 'recalling' && (
+          cat === 'digit' ? <DigitRecallingArea /> :
+          cat === 'spatial' ? <CorsiRecallingArea /> :
+          <PatternRecallingArea />
+        )}
         {phase === 'feedback' && <Feedback />}
         {phase === 'summary' && <SessionSummary />}
       </div>

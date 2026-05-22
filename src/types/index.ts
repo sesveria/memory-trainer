@@ -1,12 +1,14 @@
-// ── Mode IDs (unique string key for each training paradigm variant) ──
+// ── Mode IDs ──
 export type ModeId =
   | 'digit-forward'
   | 'digit-backward'
   | 'digit-ascending'
-  | 'corsi-block';
+  | 'corsi-forward'
+  | 'corsi-backward'
+  | 'pattern-matrix';
 
-// ── Mode category (used for grouping in UI) ──
-export type ModeCategory = 'digit' | 'spatial';
+// ── Mode category ──
+export type ModeCategory = 'digit' | 'spatial' | 'pattern';
 
 // ── Mode metadata ──
 export interface ModeMeta {
@@ -67,6 +69,5 @@ export interface TrainingEngine<Seq = number[], Resp = number[]> {
   getInstructions: () => string;
 }
 
-// ═══ Digital‑span convenience alias (removed from public API, kept for migration) ═══
 /** @deprecated use ModeId instead */
 export type DigitSpanMode = 'forward' | 'backward' | 'ascending';

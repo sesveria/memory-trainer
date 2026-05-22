@@ -6,6 +6,12 @@ interface Props {
   onSelect: (id: ModeId) => void;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  digit: '数字广度',
+  spatial: '视觉空间',
+  pattern: '图案记忆',
+};
+
 export default function ModeSelector({ onSelect }: Props) {
   const modes = getAllModes();
   const pbs = getPersonalBests();
@@ -23,7 +29,7 @@ export default function ModeSelector({ onSelect }: Props) {
       {Array.from(categories.entries()).map(([cat, catModes]) => (
         <div key={cat} style={{ marginBottom: 32 }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, textAlign: 'center', letterSpacing: '0.1em' }}>
-            {cat === 'digit' ? '数字广度' : '视觉空间'}
+            {CATEGORY_LABELS[cat] ?? cat}
           </div>
           <div className="mode-selector">
             {catModes.map((m) => (
