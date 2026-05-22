@@ -17,18 +17,12 @@ const DEFAULT_DATA: PersistedData = {
   sessions: [],
 };
 
-/**
- * Migrate old-format persisted data to new ModeId-based keys.
- * Old: session.mode = 'forward' / 'backward' / 'ascending'
- * New: session.mode = 'digit-forward' / 'digit-backward' / 'digit-ascending'
- * Old: personalBests = { forward: N, backward: N, ascending: N }
- * New: personalBests = { 'digit-forward': N, 'digit-backward': N, 'digit-ascending': N }
- */
 function migrate(data: PersistedData): PersistedData {
   let changed = false;
 
-  // Migrate personalBests
-  const pb = data.profile.personalBests;
+  const pb = data.profile.personalBests as Record<string, number>;
+
+  // ── Migrate personalBests: old digit-span keys ──
   for (const [oldKey, newKey] of Object.entries(OLD_TO_NEW_MODE)) {
     if (oldKey in pb && pb[oldKey] !== undefined) {
       const val = pb[oldKey];
@@ -40,11 +34,27 @@ function migrate(data: PersistedData): PersistedData {
     }
   }
 
-  // Migrate sessions
+  // ── Migrate sessions: old digit-span mode keys ──
   for (const s of data.sessions) {
     const newMode = OLD_TO_NEW_MODE[s.mode];
     if (newMode) {
-      s.mode = newMode as SessionRecord['mode'];
+      (s as { mode: string }).mode = newMode;
+      changed = true;
+    }
+  }
+
+  // ── Migrate old single pattern-matrix → three grid-size variants ──
+  if ('pattern-matrix' in pb && pb['pattern-matrix'] !== undefined) {
+    const best = pb['pattern-matrix'];
+    for (const newKey of ['pattern-3x3', 'pattern-4x4', 'pattern-5x5']) {
+      pb[newKey] = Math.max(pb[newKey] ?? 0, best);
+    }
+    delete pb['pattern-matrix'];
+    changed = true;
+  }
+  for (const s of data.sessions) {
+    if ((s as { mode: string }).mode === 'pattern-matrix') {
+      (s as { mode: string }).mode = 'pattern-4x4';
       changed = true;
     }
   }

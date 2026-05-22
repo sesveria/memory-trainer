@@ -1,16 +1,16 @@
 import { type MouseEvent } from 'react';
 
-const GRID_SIZE = 4;
-
 interface Props {
+  gridSize: number;
   litIndices: Set<number>;
   selectedIndices: Set<number>;
   mode: 'presenting' | 'recalling';
   onToggle?: (index: number) => void;
 }
 
-export default function PatternGrid({ litIndices, selectedIndices, mode, onToggle }: Props) {
-  const cells = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => i);
+export default function PatternGrid({ gridSize, litIndices, selectedIndices, mode, onToggle }: Props) {
+  const total = gridSize * gridSize;
+  const cells = Array.from({ length: total }, (_, i) => i);
 
   const handleClick = (index: number) => (e: MouseEvent) => {
     e.preventDefault();
@@ -18,13 +18,16 @@ export default function PatternGrid({ litIndices, selectedIndices, mode, onToggl
     onToggle?.(index);
   };
 
+  // dynamic maxWidth based on grid size
+  const maxW = gridSize <= 3 ? 260 : gridSize <= 4 ? 320 : 380;
+
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-        gap: 10,
-        maxWidth: 320,
+        gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+        gap: gridSize <= 3 ? 10 : 8,
+        maxWidth: maxW,
         width: '100%',
         margin: '0 auto',
       }}
@@ -65,7 +68,7 @@ export default function PatternGrid({ litIndices, selectedIndices, mode, onToggl
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '1.5rem',
+              fontSize: gridSize <= 3 ? '1.6rem' : gridSize <= 4 ? '1.5rem' : '1.2rem',
               fontWeight: 700,
               color: textColor,
               transition: 'background 0.15s, border-color 0.15s, transform 0.1s',

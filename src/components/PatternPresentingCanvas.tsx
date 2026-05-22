@@ -4,11 +4,12 @@ import PatternGrid from './PatternGrid';
 const SHOW_MS = 2000;
 
 interface Props {
+  gridSize: number;
   sequence: number[];
   onDone: () => void;
 }
 
-export default function PatternPresentingCanvas({ sequence, onDone }: Props) {
+export default function PatternPresentingCanvas({ gridSize, sequence, onDone }: Props) {
   const litIndices = new Set(sequence);
   const calledRef = useRef(false);
 
@@ -25,6 +26,7 @@ export default function PatternPresentingCanvas({ sequence, onDone }: Props) {
 
   return (
     <PatternGrid
+      gridSize={gridSize}
       litIndices={litIndices}
       selectedIndices={new Set()}
       mode="presenting"

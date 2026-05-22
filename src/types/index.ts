@@ -5,7 +5,9 @@ export type ModeId =
   | 'digit-ascending'
   | 'corsi-forward'
   | 'corsi-backward'
-  | 'pattern-matrix';
+  | 'pattern-3x3'
+  | 'pattern-4x4'
+  | 'pattern-5x5';
 
 // ── Mode category ──
 export type ModeCategory = 'digit' | 'spatial' | 'pattern';
@@ -19,6 +21,7 @@ export interface ModeMeta {
   category: ModeCategory;
   minSpan: number;
   maxSpan: number;
+  gridSize?: number;
 }
 
 // ── Session Phase ──

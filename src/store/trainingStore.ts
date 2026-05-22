@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ModeId, TrainingPhase, TrialRecord } from '../types';
-import { getEngine } from '../engine/registry';
+import { getEngine, getModeMeta } from '../engine/registry';
 import { createAdaptive, recordTrial, type AdaptiveState } from '../engine/adaptive';
 
 export interface TrainingState {
@@ -9,6 +9,7 @@ export interface TrainingState {
   currentSequence: number[];
   trialStartTime: number;
   currentSpanLength: number;
+  gridSize: number;
   lastUserResponse: number[];
   adaptive: AdaptiveState | null;
   lastCorrect: boolean | null;
@@ -34,6 +35,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   currentSequence: [],
   trialStartTime: 0,
   currentSpanLength: 0,
+  gridSize: 4,
   lastUserResponse: [],
   adaptive: null,
   lastCorrect: null,
@@ -45,12 +47,14 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   setMode: (id) => {
     const adaptive = createAdaptive(id);
     const engine = getEngine(id);
+    const meta = getModeMeta(id);
     const span = adaptive.currentSpan;
     const sequence = engine.generateSequence(span) as number[];
 
     set({
       modeId: id,
       adaptive,
+      gridSize: meta.gridSize ?? 4,
       phase: 'instructions',
       instructionsCountdown: 3,
       sessionTrials: [],
@@ -145,6 +149,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       currentSequence: [],
       trialStartTime: 0,
       currentSpanLength: 0,
+      gridSize: 4,
       lastUserResponse: [],
       adaptive: null,
       lastCorrect: null,

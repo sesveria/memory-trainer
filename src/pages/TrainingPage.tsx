@@ -96,11 +96,12 @@ function CorsiPresentingRunner() {
 
 function PatternPresentingRunner() {
   const phase = useTrainingStore((s) => s.phase);
+  const gridSize = useTrainingStore((s) => s.gridSize);
   const currentSequence = useTrainingStore((s) => s.currentSequence);
   const finishPresenting = useTrainingStore((s) => s.finishPresenting);
 
   if (phase !== 'presenting') return null;
-  return <PatternPresentingCanvas sequence={currentSequence} onDone={finishPresenting} />;
+  return <PatternPresentingCanvas gridSize={gridSize} sequence={currentSequence} onDone={finishPresenting} />;
 }
 
 function TrainingHeader() {
