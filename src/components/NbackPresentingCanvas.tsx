@@ -21,14 +21,33 @@ export default function NbackPresentingCanvas() {
   const [posFlash, setPosFlash] = useState(false);
   const [letFlash, setLetFlash] = useState(false);
   const [done, setDone] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
   const mountedRef = useRef(true);
   const posHitRef = useRef(false);
   const letHitRef = useRef(false);
+  const elapsedRef = useRef(0);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   posHitRef.current = posHit;
   letHitRef.current = letHit;
 
   const isWarmup = modeId ? roundIdx < nLevel : false;
+
+  // Tick timer every 50ms for progress bar
+  useEffect(() => {
+    if (phase !== 'presenting') {
+      setElapsedMs(0);
+      elapsedRef.current = 0;
+      if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+      return;
+    }
+    tickRef.current = setInterval(() => {
+      if (!mountedRef.current) return;
+      setElapsedMs(elapsedRef.current + 50);
+      elapsedRef.current += 50;
+    }, 50);
+    return () => { if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; } };
+  }, [phase]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -51,19 +70,18 @@ export default function NbackPresentingCanvas() {
 
       timers.push(setTimeout(() => {
         if (!mountedRef.current) return;
-        // Submit previous round with ground-truth validation (skip warmup rounds)
         if (i > 0 && i > nLevel) {
           const truth = getMatchTruth(i - 1);
           if (truth) {
-            const posCorrect = posHitRef.current === truth.posMatch;
-            const letterCorrect = letHitRef.current === truth.letterMatch;
-            recordNbackRound(posCorrect, letterCorrect);
+            recordNbackRound(posHitRef.current === truth.posMatch, letHitRef.current === truth.letterMatch);
           }
         }
         setRoundIdx(i);
         setShowHighlight(true);
         setPosHit(false); setLetHit(false);
         setPosFlash(false); setLetFlash(false);
+        setElapsedMs(0);
+        elapsedRef.current = 0;
       }, startMs));
 
       timers.push(setTimeout(() => {
@@ -78,9 +96,7 @@ export default function NbackPresentingCanvas() {
       if (totalRounds > nLevel) {
         const truth = getMatchTruth(totalRounds - 1);
         if (truth) {
-          const posCorrect = posHitRef.current === truth.posMatch;
-          const letterCorrect = letHitRef.current === truth.letterMatch;
-          recordNbackRound(posCorrect, letterCorrect);
+          recordNbackRound(posHitRef.current === truth.posMatch, letHitRef.current === truth.letterMatch);
         }
       }
       setDone(true);
@@ -118,8 +134,12 @@ export default function NbackPresentingCanvas() {
   const { position, letter } = decodeStimulus(raw);
   const cells = Array.from({ length: 9 }, (_, i) => i);
 
+  // Progress: percentage of current round elapsed
+  const roundMs = elapsedMs % ROUND_MS;
+  const pct = Math.min(100, (roundMs / (ROUND_MS - 100)) * 100);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
       {isWarmup && (
         <div style={{
           background: 'var(--accent-gold)', color: 'var(--bg-primary)',
@@ -128,6 +148,15 @@ export default function NbackPresentingCanvas() {
           🟡 第 {roundIdx + 1}/{nLevel} 轮 — 仅观察，无需按键
         </div>
       )}
+
+      {/* Countdown bar */}
+      <div style={{ width: 240, height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{
+          width: `${pct}%`, height: '100%',
+          background: pct > 80 ? 'var(--accent-red)' : 'var(--accent-blue)',
+          borderRadius: 2, transition: 'width 0.05s linear',
+        }} />
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 200, width: '100%' }}>
         {cells.map((idx) => {

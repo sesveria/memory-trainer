@@ -40,31 +40,35 @@ function SummaryCards({ sessions }: { sessions: SessionRecord[] }) {
   );
 }
 
-function MiniTrend({ sessions, color }: { sessions: SessionRecord[]; color: string }) {
+function MiniTrend({ sessions, color, yAxis }: { sessions: SessionRecord[]; color: string; yAxis: 'span' | 'accuracy' }) {
+  const isAcc = yAxis === 'accuracy';
+  const field = isAcc ? 'accuracy' : 'bestSpan';
   const data = sessions.slice(-25);
   if (data.length < 2) return null;
 
   const W = 360; const H = 120;
   const P = { t: 12, r: 12, b: 24, l: 28 };
   const pw = W - P.l - P.r; const ph = H - P.t - P.b;
-  const max = Math.max(...data.map((x) => x.bestSpan), 3);
-  const min = Math.min(...data.map((x) => x.bestSpan), 1);
+  const max = Math.max(...data.map((x) => x[field]), isAcc ? 100 : 3);
+  const min = Math.min(...data.map((x) => x[field]), isAcc ? 0 : 1);
   const rng = max - min || 1;
   const toX = (i: number) => P.l + (i / Math.max(data.length - 1, 1)) * pw;
   const toY = (v: number) => P.t + ph - ((v - min) / rng) * ph;
-  const poly = data.map((x, i) => `${toX(i)},${toY(x.bestSpan)}`).join(' ');
+  const poly = data.map((x, i) => `${toX(i)},${toY(x[field])}`).join(' ');
+
+  const ticks = [min, Math.round((min + max) / 2), max];
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: 380, display: 'block', margin: '0 auto' }}>
-      {[min, Math.round((min + max) / 2), max].map((v) => (
+      {ticks.map((v) => (
         <line key={v} x1={P.l} y1={toY(v)} x2={W - P.r} y2={toY(v)} stroke="var(--border)" strokeWidth={0.5} />
       ))}
-      {[min, Math.round((min + max) / 2), max].map((v) => (
-        <text key={v} x={P.l - 4} y={toY(v) + 3} fill="var(--text-muted)" fontSize={8} textAnchor="end">{v}</text>
+      {ticks.map((v) => (
+        <text key={v} x={P.l - 4} y={toY(v) + 3} fill="var(--text-muted)" fontSize={8} textAnchor="end">{isAcc ? `${v}%` : v}</text>
       ))}
       <polyline points={poly} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
       {data.map((x, i) => (
-        <circle key={i} cx={toX(i)} cy={toY(x.bestSpan)} r={2.5} fill={color} />
+        <circle key={i} cx={toX(i)} cy={toY(x[field])} r={2.5} fill={color} />
       ))}
     </svg>
   );
@@ -137,6 +141,7 @@ export default function StatsPanel() {
   if (sessions.length < 2) return null;
 
   const filterKeys: FilterKey[] = ['all', 'digit', 'spatial', 'pattern', 'nback'];
+  const activeColor = filter === 'all' ? 'var(--accent-blue)' : (CAT_COLORS[filter] ?? 'var(--accent-blue)');
 
   return (
     <div style={{ maxWidth: 700, width: '100%', margin: '0 auto 20px' }}>
@@ -163,15 +168,13 @@ export default function StatsPanel() {
         </Section>
       ) : (
         <>
-          <Section title="概览" defaultOpen>
-            <CatAccuracyBars sessions={filteredSessions} />
-          </Section>
           {modes.filter((m) => m.category === filter).map((m) => {
             const ms = sessions.filter((s) => s.mode === m.id);
             if (ms.length < 2) return null;
+            const isNback = m.category === 'nback';
             return (
-              <Section key={m.id} title={`${m.label} — 广度趋势`} defaultOpen={ms.length <= 3}>
-                <MiniTrend sessions={ms} color={CAT_COLORS[filter] ?? 'var(--accent-blue)'} />
+              <Section key={m.id} title={`${m.label} — ${isNback ? '正确率趋势' : '广度趋势'}`} defaultOpen={ms.length <= 3}>
+                <MiniTrend sessions={ms} color={activeColor} yAxis={isNback ? 'accuracy' : 'span'} />
               </Section>
             );
           })}
