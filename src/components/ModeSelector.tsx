@@ -10,13 +10,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   digit: '数字广度',
   spatial: '视觉空间',
   pattern: '图案记忆',
+  nback: 'N-Back 双任务',
 };
 
 export default function ModeSelector({ onSelect }: Props) {
   const modes = getAllModes();
   const pbs = getPersonalBests();
 
-  // Group by category
   const categories = new Map<string, typeof modes>();
   for (const m of modes) {
     const cat = m.category;
@@ -38,7 +38,10 @@ export default function ModeSelector({ onSelect }: Props) {
                 <div className="mode-card-title">{m.label}</div>
                 <div className="mode-card-desc">{m.description}</div>
                 <div className="mode-card-best">
-                  个人最佳：{pbs[m.id] > 0 ? pbs[m.id] : '—'}
+                  {m.category === 'nback'
+                    ? `固定 ${m.minSpan}-Back`
+                    : `个人最佳：${pbs[m.id] > 0 ? pbs[m.id] : '—'}`
+                  }
                 </div>
               </button>
             ))}

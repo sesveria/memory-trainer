@@ -7,10 +7,13 @@ export type ModeId =
   | 'corsi-backward'
   | 'pattern-3x3'
   | 'pattern-4x4'
-  | 'pattern-5x5';
+  | 'pattern-5x5'
+  | 'nback-1'
+  | 'nback-2'
+  | 'nback-3';
 
 // ── Mode category ──
-export type ModeCategory = 'digit' | 'spatial' | 'pattern';
+export type ModeCategory = 'digit' | 'spatial' | 'pattern' | 'nback';
 
 // ── Mode metadata ──
 export interface ModeMeta {
@@ -40,6 +43,11 @@ export interface TrialRecord {
   userResponse: number[];
   correct: boolean;
   responseTimeMs: number;
+  nbackMeta?: {
+    nLevel: number;
+    posCorrect: boolean;
+    letterCorrect: boolean;
+  };
 }
 
 // ── Session record (persisted) ──

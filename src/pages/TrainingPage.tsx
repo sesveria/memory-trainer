@@ -9,6 +9,8 @@ import CorsiPresentingCanvas from '../components/CorsiPresentingCanvas';
 import CorsiRecallingArea from '../components/CorsiRecallingArea';
 import PatternPresentingCanvas from '../components/PatternPresentingCanvas';
 import PatternRecallingArea from '../components/PatternRecallingArea';
+import NbackPresentingCanvas from '../components/NbackPresentingCanvas';
+import NbackSummary from '../components/NbackSummary';
 import Feedback from '../components/Feedback';
 import SessionSummary from '../components/SessionSummary';
 
@@ -115,7 +117,7 @@ function TrainingHeader() {
     <div className="training-header">
       <span className="training-mode-label">{label}</span>
       <span className="training-span-badge">
-        广度 {adaptive?.currentSpan ?? '—'}
+        {adaptive ? `广度 ${adaptive.currentSpan}` : ''}
       </span>
       <button className="training-end-btn" onClick={endSession}>
         结束
@@ -132,6 +134,7 @@ export default function TrainingPage() {
 
   const meta = getModeMeta(modeId);
   const cat = meta.category;
+  const isNback = cat === 'nback';
 
   return (
     <div className="training-page">
@@ -141,15 +144,16 @@ export default function TrainingPage() {
         {phase === 'presenting' && (
           cat === 'digit' ? <DigitPresentingRunner /> :
           cat === 'spatial' ? <CorsiPresentingRunner /> :
-          <PatternPresentingRunner />
+          cat === 'pattern' ? <PatternPresentingRunner /> :
+          <NbackPresentingCanvas />
         )}
         {phase === 'recalling' && (
           cat === 'digit' ? <DigitRecallingArea /> :
           cat === 'spatial' ? <CorsiRecallingArea /> :
           <PatternRecallingArea />
         )}
-        {phase === 'feedback' && <Feedback />}
-        {phase === 'summary' && <SessionSummary />}
+        {phase === 'feedback' && !isNback && <Feedback />}
+        {phase === 'summary' && (isNback ? <NbackSummary /> : <SessionSummary />)}
       </div>
     </div>
   );
