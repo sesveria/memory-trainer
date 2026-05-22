@@ -1,12 +1,16 @@
 import ModeSelector from '../components/ModeSelector';
 import PersonalBests from '../components/PersonalBests';
 import { getRecentSessions, getTotalSessions } from '../engine/storage';
-import { getModeLabel } from '../engine/digitSpan';
-import type { DigitSpanMode } from '../types';
+import { getModeMeta } from '../engine/registry';
+import type { ModeId } from '../types';
 import { useMemo } from 'react';
 
 interface Props {
-  onSelectMode: (mode: DigitSpanMode) => void;
+  onSelectMode: (id: ModeId) => void;
+}
+
+function modeLabel(id: string): string {
+  try { return getModeMeta(id as ModeId).label; } catch { return id; }
 }
 
 export default function HomePage({ onSelectMode }: Props) {
@@ -30,7 +34,7 @@ export default function HomePage({ onSelectMode }: Props) {
           <h3>最近训练</h3>
           {sessions.map((s) => (
             <div key={s.id} className="session-row">
-              <span className="session-row-mode">{getModeLabel(s.mode)}</span>
+              <span className="session-row-mode">{modeLabel(s.mode)}</span>
               <span className="session-row-meta">
                 {new Date(s.timestamp).toLocaleDateString('zh-CN', {
                   month: 'short',

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useTrainingStore } from '../store/trainingStore';
-import { getModeLabel } from '../engine/digitSpan';
+import { getModeMeta, getEngine } from '../engine/registry';
 
 export default function Instructions() {
-  const mode = useTrainingStore((s) => s.mode);
+  const modeId = useTrainingStore((s) => s.modeId);
   const countdown = useTrainingStore((s) => s.instructionsCountdown);
   const tickCountdown = useTrainingStore((s) => s.tickCountdown);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -18,12 +18,14 @@ export default function Instructions() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!mode) return null;
+  if (!modeId) return null;
+  const meta = getModeMeta(modeId);
+  const engine = getEngine(modeId);
 
   return (
     <div className="instructions">
-      <div className="instructions-mode">{getModeLabel(mode)}</div>
-      <div className="instructions-hint">请准备好，数字即将出现</div>
+      <div className="instructions-mode">{meta.label}</div>
+      <div className="instructions-hint">{engine.getInstructions()}</div>
       <div className="instructions-countdown" key={countdown}>
         {countdown}
       </div>

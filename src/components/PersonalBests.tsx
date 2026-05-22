@@ -1,23 +1,26 @@
 import { getPersonalBests } from '../engine/storage';
-
-const LABELS: Record<string, string> = {
-  forward: '正向广度',
-  backward: '反向广度',
-  ascending: '升序排序',
-};
+import { getModeMeta } from '../engine/registry';
+import type { ModeId } from '../types';
 
 export default function PersonalBests() {
   const pbs = getPersonalBests();
-  const entries = Object.entries(pbs) as [string, number][];
+  const entries = Object.entries(pbs).filter(([, v]) => v > 0);
+  if (entries.length === 0) return null;
 
   return (
     <div className="personal-bests">
-      {entries.map(([key, val]) => (
-        <div key={key} className="pb-item">
-          <div className="pb-label">{LABELS[key] || key}</div>
-          <div className="pb-value">{val > 0 ? val : '—'}</div>
-        </div>
-      ))}
+      {entries.map(([id, val]) => {
+        let label = id;
+        try {
+          label = getModeMeta(id as ModeId).label;
+        } catch {}
+        return (
+          <div key={id} className="pb-item">
+            <div className="pb-label">{label}</div>
+            <div className="pb-value">{val}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

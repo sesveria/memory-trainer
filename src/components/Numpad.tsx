@@ -1,35 +1,34 @@
 import { useEffect } from 'react';
-import { useTrainingStore } from '../store/trainingStore';
 
-export default function Numpad() {
-  const userInput = useTrainingStore((s) => s.userInput);
-  const currentSpanLength = useTrainingStore((s) => s.currentSpanLength);
-  const pushDigit = useTrainingStore((s) => s.pushDigit);
-  const popDigit = useTrainingStore((s) => s.popDigit);
-  const submitResponse = useTrainingStore((s) => s.submitResponse);
-  const phase = useTrainingStore((s) => s.phase);
+interface Props {
+  value: number[];
+  maxLength: number;
+  disabled: boolean;
+  onPush: (digit: number) => void;
+  onPop: () => void;
+  onSubmit: () => void;
+}
 
-  const canSubmit = userInput.length === currentSpanLength;
-  const isRecalling = phase === 'recalling';
+export default function Numpad({ value, maxLength, disabled, onPush, onPop, onSubmit }: Props) {
+  const canSubmit = value.length === maxLength;
 
+  // Keyboard support
   useEffect(() => {
-    if (!isRecalling) return;
+    if (disabled) return;
 
     const handler = (e: KeyboardEvent) => {
       if (e.key >= '0' && e.key <= '9') {
-        pushDigit(Number(e.key));
+        if (value.length < maxLength) onPush(Number(e.key));
       } else if (e.key === 'Backspace') {
-        popDigit();
+        onPop();
       } else if (e.key === 'Enter') {
-        if (userInput.length === currentSpanLength) {
-          submitResponse();
-        }
+        if (value.length === maxLength) onSubmit();
       }
     };
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isRecalling, pushDigit, popDigit, submitResponse, userInput.length, currentSpanLength]);
+  }, [disabled, value.length, maxLength, onPush, onPop, onSubmit]);
 
   const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -39,26 +38,26 @@ export default function Numpad() {
         <button
           key={d}
           className="numpad-btn"
-          onClick={() => pushDigit(d)}
-          disabled={!isRecalling || userInput.length >= currentSpanLength}
+          onClick={() => onPush(d)}
+          disabled={disabled || value.length >= maxLength}
         >
           {d}
         </button>
       ))}
       <button
         className="numpad-btn backspace"
-        onClick={popDigit}
-        disabled={!isRecalling || userInput.length === 0}
+        onClick={onPop}
+        disabled={disabled || value.length === 0}
       >
         ⌫
       </button>
-      <button className="numpad-btn zero" onClick={() => pushDigit(0)} disabled={!isRecalling || userInput.length >= currentSpanLength}>
+      <button className="numpad-btn zero" onClick={() => onPush(0)} disabled={disabled || value.length >= maxLength}>
         0
       </button>
       <button
         className="numpad-btn submit"
-        onClick={submitResponse}
-        disabled={!canSubmit || !isRecalling}
+        onClick={onSubmit}
+        disabled={!canSubmit || disabled}
       >
         确认 ✓
       </button>

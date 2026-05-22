@@ -1,25 +1,16 @@
-import type { DigitSpanMode } from '../types';
-import { getMinSpan, getMaxSpan } from './digitSpan';
+import type { ModeId } from '../types';
+import { getMinSpan, getMaxSpan } from './registry';
 
-/**
- * Adaptive staircase: span adjusts based on consecutive correct / incorrect answers.
- *
- * - 2 consecutive correct → span + 1
- * - 2 consecutive incorrect → span - 1
- * - Mixed → span unchanged
- * - Clamped to [minSpan, maxSpan] for the given mode
- */
 export interface AdaptiveState {
   currentSpan: number;
   consecutiveCorrect: number;
   consecutiveWrong: number;
-  mode: DigitSpanMode;
+  mode: ModeId;
 }
 
-export function createAdaptive(mode: DigitSpanMode): AdaptiveState {
-  const min = getMinSpan(mode);
+export function createAdaptive(mode: ModeId): AdaptiveState {
   return {
-    currentSpan: min,
+    currentSpan: getMinSpan(mode),
     consecutiveCorrect: 0,
     consecutiveWrong: 0,
     mode,
@@ -38,14 +29,14 @@ export function recordTrial(
     state.consecutiveWrong = 0;
     if (state.consecutiveCorrect >= 2) {
       state.currentSpan = Math.min(state.currentSpan + 1, max);
-      state.consecutiveCorrect = 0; // reset after adjustment
+      state.consecutiveCorrect = 0;
     }
   } else {
     state.consecutiveWrong++;
     state.consecutiveCorrect = 0;
     if (state.consecutiveWrong >= 2) {
       state.currentSpan = Math.max(state.currentSpan - 1, min);
-      state.consecutiveWrong = 0; // reset after adjustment
+      state.consecutiveWrong = 0;
     }
   }
 }

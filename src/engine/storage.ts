@@ -1,11 +1,11 @@
-import type { PersistedData, SessionRecord, PersonalBests, DigitSpanMode } from '../types';
+import type { PersistedData, SessionRecord, PersonalBests } from '../types';
 
 const STORAGE_KEY = 'memory-trainer-data';
 const MAX_SESSIONS = 100;
 
 const DEFAULT_DATA: PersistedData = {
   profile: {
-    personalBests: { forward: 0, backward: 0, ascending: 0 },
+    personalBests: {},
     totalSessions: 0,
   },
   sessions: [],
@@ -16,7 +16,6 @@ export function loadData(): PersistedData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return structuredClone(DEFAULT_DATA);
     const parsed = JSON.parse(raw) as PersistedData;
-    // Validate shape
     if (!parsed.profile || !parsed.sessions) return structuredClone(DEFAULT_DATA);
     return parsed;
   } catch {
@@ -25,7 +24,6 @@ export function loadData(): PersistedData {
 }
 
 function saveData(data: PersistedData): void {
-  // Trim old sessions
   if (data.sessions.length > MAX_SESSIONS) {
     data.sessions = data.sessions.slice(-MAX_SESSIONS);
   }
@@ -35,12 +33,8 @@ function saveData(data: PersistedData): void {
 export function appendSession(session: SessionRecord): void {
   const data = loadData();
 
-  // Update personal bests
   const pb = data.profile.personalBests;
-  const mode = session.mode;
-  if (session.bestSpan > pb[mode]) {
-    pb[mode] = session.bestSpan;
-  }
+  pb[session.mode] = Math.max(pb[session.mode] ?? 0, session.bestSpan);
 
   data.profile.totalSessions++;
   data.sessions.push(session);

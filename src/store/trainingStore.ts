@@ -1,15 +1,15 @@
 import { create } from 'zustand';
-import type { DigitSpanMode, TrainingPhase, TrialRecord } from '../types';
-import { getEngine } from '../engine/digitSpan';
+import type { ModeId, TrainingPhase, TrialRecord } from '../types';
+import { getEngine } from '../engine/registry';
 import { createAdaptive, recordTrial, type AdaptiveState } from '../engine/adaptive';
 
 export interface TrainingState {
-  mode: DigitSpanMode | null;
+  modeId: ModeId | null;
   phase: TrainingPhase;
   currentSequence: number[];
   trialStartTime: number;
   currentSpanLength: number;
-  userInput: number[];
+  lastUserResponse: number[];
   adaptive: AdaptiveState | null;
   lastCorrect: boolean | null;
   sessionTrials: TrialRecord[];
@@ -17,13 +17,11 @@ export interface TrainingState {
   bestSpanThisSession: number;
   instructionsCountdown: number;
 
-  setMode: (mode: DigitSpanMode) => void;
+  setMode: (id: ModeId) => void;
   startTrial: () => void;
   startPresenting: () => void;
   finishPresenting: () => void;
-  pushDigit: (digit: number) => void;
-  popDigit: () => void;
-  submitResponse: () => void;
+  submitResponse: (response: number[]) => void;
   nextTrial: () => void;
   endSession: () => void;
   tickCountdown: () => void;
@@ -31,12 +29,12 @@ export interface TrainingState {
 }
 
 export const useTrainingStore = create<TrainingState>((set, get) => ({
-  mode: null,
+  modeId: null,
   phase: 'idle',
   currentSequence: [],
   trialStartTime: 0,
   currentSpanLength: 0,
-  userInput: [],
+  lastUserResponse: [],
   adaptive: null,
   lastCorrect: null,
   sessionTrials: [],
@@ -44,14 +42,14 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   bestSpanThisSession: 0,
   instructionsCountdown: 3,
 
-  setMode: (mode) => {
-    const adaptive = createAdaptive(mode);
-    const engine = getEngine(mode);
+  setMode: (id) => {
+    const adaptive = createAdaptive(id);
+    const engine = getEngine(id);
     const span = adaptive.currentSpan;
-    const sequence = engine.generateSequence(span);
+    const sequence = engine.generateSequence(span) as number[];
 
     set({
-      mode,
+      modeId: id,
       adaptive,
       phase: 'instructions',
       instructionsCountdown: 3,
@@ -60,21 +58,21 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       bestSpanThisSession: 0,
       currentSpanLength: span,
       currentSequence: sequence,
-      userInput: [],
+      lastUserResponse: [],
       lastCorrect: null,
     });
   },
 
   startTrial: () => {
-    const { adaptive, mode } = get();
-    if (!adaptive || !mode) return;
-    const engine = getEngine(mode);
+    const { adaptive, modeId } = get();
+    if (!adaptive || !modeId) return;
+    const engine = getEngine(modeId);
     const span = adaptive.currentSpan;
-    const sequence = engine.generateSequence(span);
+    const sequence = engine.generateSequence(span) as number[];
     set({
       currentSpanLength: span,
       currentSequence: sequence,
-      userInput: [],
+      lastUserResponse: [],
       lastCorrect: null,
       phase: 'instructions',
       instructionsCountdown: 3,
@@ -92,32 +90,19 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     set({ phase: 'recalling' });
   },
 
-  pushDigit: (digit) => {
-    const { userInput, currentSpanLength } = get();
-    if (userInput.length >= currentSpanLength) return;
-    set({ userInput: [...userInput, digit] });
-  },
-
-  popDigit: () => {
-    const { userInput } = get();
-    if (userInput.length === 0) return;
-    set({ userInput: userInput.slice(0, -1) });
-  },
-
-  submitResponse: () => {
-    const { mode, currentSequence, userInput, trialStartTime, adaptive, sessionTrials, bestSpanThisSession } = get();
-    if (!mode || !adaptive) return;
-    if (userInput.length !== currentSequence.length) return;
+  submitResponse: (response) => {
+    const { modeId, currentSequence, trialStartTime, adaptive, sessionTrials, bestSpanThisSession } = get();
+    if (!modeId || !adaptive) return;
     if (get().phase !== 'recalling') return;
 
-    const engine = getEngine(mode);
-    const correct = engine.validate(currentSequence, userInput);
+    const engine = getEngine(modeId);
+    const correct = engine.validate(currentSequence, response);
     const responseTimeMs = Date.now() - trialStartTime;
 
     const trial: TrialRecord = {
       spanLength: currentSequence.length,
       sequence: currentSequence,
-      userResponse: userInput,
+      userResponse: response,
       correct,
       responseTimeMs,
     };
@@ -129,6 +114,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     set({
       phase: 'feedback',
       lastCorrect: correct,
+      lastUserResponse: response,
       sessionTrials: [...sessionTrials, trial],
       bestSpanThisSession: newBest,
       adaptive: { ...adaptive },
@@ -154,12 +140,12 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
 
   resetToHome: () => {
     set({
-      mode: null,
+      modeId: null,
       phase: 'idle',
       currentSequence: [],
       trialStartTime: 0,
       currentSpanLength: 0,
-      userInput: [],
+      lastUserResponse: [],
       adaptive: null,
       lastCorrect: null,
       sessionTrials: [],

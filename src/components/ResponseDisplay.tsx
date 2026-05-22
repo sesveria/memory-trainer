@@ -1,12 +1,12 @@
-import { useTrainingStore } from '../store/trainingStore';
+interface Props {
+  value: number[];
+  length: number;
+}
 
-export default function ResponseDisplay() {
-  const userInput = useTrainingStore((s) => s.userInput);
-  const currentSpanLength = useTrainingStore((s) => s.currentSpanLength);
-
+export default function ResponseDisplay({ value, length }: Props) {
   const slots: (number | null)[] = [];
-  for (let i = 0; i < currentSpanLength; i++) {
-    slots.push(i < userInput.length ? userInput[i] : null);
+  for (let i = 0; i < length; i++) {
+    slots.push(i < value.length ? value[i] : null);
   }
 
   return (

@@ -1,5 +1,23 @@
-// ── Training Modes ──
-export type DigitSpanMode = 'forward' | 'backward' | 'ascending';
+// ── Mode IDs (unique string key for each training paradigm variant) ──
+export type ModeId =
+  | 'digit-forward'
+  | 'digit-backward'
+  | 'digit-ascending'
+  | 'corsi-block';
+
+// ── Mode category (used for grouping in UI) ──
+export type ModeCategory = 'digit' | 'spatial';
+
+// ── Mode metadata ──
+export interface ModeMeta {
+  id: ModeId;
+  label: string;
+  description: string;
+  icon: string;
+  category: ModeCategory;
+  minSpan: number;
+  maxSpan: number;
+}
 
 // ── Session Phase ──
 export type TrainingPhase =
@@ -23,19 +41,15 @@ export interface TrialRecord {
 export interface SessionRecord {
   id: string;
   timestamp: number;
-  mode: DigitSpanMode;
+  mode: ModeId;
   trials: TrialRecord[];
   finalSpan: number;
   bestSpan: number;
   accuracy: number;
 }
 
-// ── Personal bests ──
-export interface PersonalBests {
-  forward: number;
-  backward: number;
-  ascending: number;
-}
+// ── Personal bests (keyed by ModeId) ──
+export type PersonalBests = Record<string, number>;
 
 // ── Persisted data shape ──
 export interface PersistedData {
@@ -46,9 +60,13 @@ export interface PersistedData {
   sessions: SessionRecord[];
 }
 
-// ── Engine interface for future multi-modal expansion ──
-export interface TrainingEngine {
-  generateSequence: (spanLength: number) => number[];
-  validate: (sequence: number[], userResponse: number[]) => boolean;
+// ── Abstract engine interface ──
+export interface TrainingEngine<Seq = number[], Resp = number[]> {
+  generateSequence: (spanLength: number) => Seq;
+  validate: (sequence: Seq, userResponse: Resp) => boolean;
   getInstructions: () => string;
 }
+
+// ═══ Digital‑span convenience alias (removed from public API, kept for migration) ═══
+/** @deprecated use ModeId instead */
+export type DigitSpanMode = 'forward' | 'backward' | 'ascending';

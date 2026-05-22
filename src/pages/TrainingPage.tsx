@@ -1,18 +1,19 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTrainingStore } from '../store/trainingStore';
-import { getModeLabel } from '../engine/digitSpan';
+import { getModeMeta } from '../engine/registry';
 import Instructions from '../components/Instructions';
 import DigitDisplay from '../components/DigitDisplay';
 import FixationCross from '../components/FixationCross';
-import ResponseDisplay from '../components/ResponseDisplay';
-import Numpad from '../components/Numpad';
+import DigitRecallingArea from '../components/DigitRecallingArea';
+import CorsiPresentingCanvas from '../components/CorsiPresentingCanvas';
+import CorsiRecallingArea from '../components/CorsiRecallingArea';
 import Feedback from '../components/Feedback';
 import SessionSummary from '../components/SessionSummary';
 
 const DIGIT_SHOW_MS = 800;
 const INTERVAL_MS = 500;
 
-function PresentingRunner() {
+function DigitPresentingRunner() {
   const phase = useTrainingStore((s) => s.phase);
   const currentSequence = useTrainingStore((s) => s.currentSequence);
   const finishPresenting = useTrainingStore((s) => s.finishPresenting);
@@ -58,9 +59,7 @@ function PresentingRunner() {
       }
     });
 
-    // Total presenting duration
     const totalMs = (seq.length - 1) * (DIGIT_SHOW_MS + INTERVAL_MS) + DIGIT_SHOW_MS + 200;
-
     const doneTimer = setTimeout(() => {
       if (!mountedRef.current) return;
       setDone(true);
@@ -72,7 +71,6 @@ function PresentingRunner() {
     };
   }, [phase, currentSequence]);
 
-  // When the presenting sequence has finished, call finishPresenting
   useEffect(() => {
     if (done && phase === 'presenting') {
       finishPresenting();
@@ -81,20 +79,29 @@ function PresentingRunner() {
 
   if (phase !== 'presenting') return null;
 
-  if (showFixation) {
-    return <FixationCross />;
-  }
+  if (showFixation) return <FixationCross />;
   return <DigitDisplay digit={currentSequence[index] ?? 0} />;
 }
 
+function CorsiPresentingRunner() {
+  const phase = useTrainingStore((s) => s.phase);
+  const currentSequence = useTrainingStore((s) => s.currentSequence);
+  const finishPresenting = useTrainingStore((s) => s.finishPresenting);
+
+  if (phase !== 'presenting') return null;
+  return <CorsiPresentingCanvas sequence={currentSequence} onDone={finishPresenting} />;
+}
+
 function TrainingHeader() {
-  const mode = useTrainingStore((s) => s.mode);
+  const modeId = useTrainingStore((s) => s.modeId);
   const adaptive = useTrainingStore((s) => s.adaptive);
   const endSession = useTrainingStore((s) => s.endSession);
 
+  const label = modeId ? getModeMeta(modeId).label : '';
+
   return (
     <div className="training-header">
-      <span className="training-mode-label">{mode ? getModeLabel(mode) : ''}</span>
+      <span className="training-mode-label">{label}</span>
       <span className="training-span-badge">
         广度 {adaptive?.currentSpan ?? '—'}
       </span>
@@ -106,23 +113,21 @@ function TrainingHeader() {
 }
 
 export default function TrainingPage() {
-  const mode = useTrainingStore((s) => s.mode);
+  const modeId = useTrainingStore((s) => s.modeId);
   const phase = useTrainingStore((s) => s.phase);
 
-  if (!mode) return null;
+  if (!modeId) return null;
+
+  const meta = getModeMeta(modeId);
+  const isDigit = meta.category === 'digit';
 
   return (
     <div className="training-page">
       <TrainingHeader />
       <div className="display-area">
         {phase === 'instructions' && <Instructions />}
-        {phase === 'presenting' && <PresentingRunner />}
-        {phase === 'recalling' && (
-          <div className="response-area">
-            <ResponseDisplay />
-            <Numpad />
-          </div>
-        )}
+        {phase === 'presenting' && (isDigit ? <DigitPresentingRunner /> : <CorsiPresentingRunner />)}
+        {phase === 'recalling' && (isDigit ? <DigitRecallingArea /> : <CorsiRecallingArea />)}
         {phase === 'feedback' && <Feedback />}
         {phase === 'summary' && <SessionSummary />}
       </div>
