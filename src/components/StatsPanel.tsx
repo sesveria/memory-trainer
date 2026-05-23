@@ -173,7 +173,7 @@ export default function StatsPanel() {
             if (ms.length < 2) return null;
             const isNback = m.category === 'nback';
             return (
-              <Section key={m.id} title={`${m.label} — ${isNback ? '正确率趋势' : '广度趋势'}`} defaultOpen={ms.length <= 3}>
+              <Section key={m.id} title={`${m.label} — ${isNback ? '正确率趋势' : '广度趋势'}`} defaultOpen>
                 <MiniTrend sessions={ms} color={activeColor} yAxis={isNback ? 'accuracy' : 'span'} />
               </Section>
             );
